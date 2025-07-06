@@ -1,34 +1,32 @@
 from flask import Flask, request, jsonify
 import requests
 from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-CORS(app)  # Permitir CORS para pruebas
+CORS(app)
 
-@app.route('/naturgy', methods=['GET'])
-def get_naturgy_data():
-    cups = request.args.get('cups')
+@app.route("/naturgy", methods=["GET"])
+def proxy():
+    cups = request.args.get("cups")
     if not cups:
-        return jsonify({"error": "Falta el parámetro CUPS"}), 400
+        return jsonify({"error": "Falta el parámetro cups"}), 400
 
     url = f"https://services.zapotek-pre.adn.naturgy.com/pricing/sips/technical_infos/ELECTRICITY?cups={cups}&energyType=ELECTRICITY"
 
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-        "Accept": "application/json",
         "Origin": "https://front-calculator.zapotek-pre.adn.naturgy.com",
-        "Referer": "https://front-calculator.zapotek-pre.adn.naturgy.com/"
+        "Referer": "https://front-calculator.zapotek-pre.adn.naturgy.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
     }
 
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code != 200:
-            return jsonify({"error": "No se pudo obtener la información", "status": response.status_code}), response.status_code
-        return jsonify(response.json())
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    response = requests.get(url, headers=headers)
+
+    return (
+        jsonify(response.json()) if response.status_code == 200 
+        else (f"❌ Error al consultar: {response.status_code}", response.status_code)
+    )
 
 if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
